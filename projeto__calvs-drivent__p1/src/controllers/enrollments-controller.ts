@@ -2,7 +2,8 @@ import { AuthenticatedRequest } from "@/middlewares";
 import enrollmentsService from "@/services/enrollments-service";
 import { Response } from "express";
 import httpStatus from "http-status";
-
+import axios from "axios";
+import {ViaCEPAddress, ViaCEPAddressAPI} from "@/protocols"
 export async function getEnrollmentByUser(req: AuthenticatedRequest, res: Response) {
   const { userId } = req;
 
@@ -30,9 +31,23 @@ export async function postCreateOrUpdateEnrollment(req: AuthenticatedRequest, re
 
 export async function getAddressFromCEP(req: AuthenticatedRequest, res: Response) {
   const { cep } = req.query as Record<string, string>;
-
+ 
   try {
-    const address = await enrollmentsService.getAddressFromCEP(cep);
+    const URL = `https://viacep.com.br/ws/${cep}/json/`;
+    const response  = await axios.get(URL);
+    const responseCEP = response.data as ViaCEPAddress 
+    const responseCEPAPI = {
+      
+        logradouro: responseCEP.logradouro,
+        complemento: responseCEP.complemento,
+        bairro: responseCEP.bairro,
+        localidade: responseCEP.localidade,
+        uf: responseCEP.uf,
+      
+
+    };
+ 
+    const address = await enrollmentsService.getAddressFromCEP();
     res.status(httpStatus.OK).send(address);
   } catch (error) {
     if (error.name === "NotFoundError") {
